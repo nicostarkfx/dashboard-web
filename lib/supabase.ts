@@ -12,20 +12,28 @@ import { getMockClient } from "./mockClient";
 const MOCK_MODE = process.env.NEXT_PUBLIC_MOCK === "true";
 
 /**
- * Single Supabase config. Anon key only — no service role required.
+ * Read & validate Supabase env vars on demand.
+ *
+ * Replaces the old module-level `assertEnv()` whose
+ * `asserts supabaseUrl is string` clause referenced a closure binding —
+ * invalid under strict TS (TS1225) and broke `next build` on Vercel.
+ *
+ * In MOCK mode this function is never called, so the Supabase env vars
+ * do not need to be defined.
+ *
  * Trim defends against trailing whitespace/newlines pasted into .env.local.
  */
-const supabaseUrl     = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-
-function assertEnv(): asserts supabaseUrl is string {
-  if (!supabaseUrl || !supabaseAnonKey) {
+function readSupabaseEnv(): { url: string; key: string } {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || !key) {
     throw new Error(
       "[supabase] Missing NEXT_PUBLIC_SUPABASE_URL or " +
       "NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local. " +
       "Restart `next dev` after editing."
     );
   }
+  return { url, key };
 }
 
 /** Force every PostgREST call to bypass Next.js's server fetch cache. */
@@ -46,13 +54,13 @@ const baseOptions = {
 /** Browser-side client. */
 export function browserClient(): SupabaseClient {
   if (MOCK_MODE) return getMockClient() as unknown as SupabaseClient;
-  assertEnv();
-  return createClient(supabaseUrl, supabaseAnonKey!, baseOptions);
+  const { url, key } = readSupabaseEnv();
+  return createClient(url, key, baseOptions);
 }
 
 /** Server-side client (Server Components, Route Handlers, Server Actions). */
 export function serverClient(): SupabaseClient {
   if (MOCK_MODE) return getMockClient() as unknown as SupabaseClient;
-  assertEnv();
-  return createClient(supabaseUrl, supabaseAnonKey!, baseOptions);
+  const { url, key } = readSupabaseEnv();
+  return createClient(url, key, baseOptions);
 }
