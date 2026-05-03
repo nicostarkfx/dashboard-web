@@ -53,7 +53,7 @@ export function AccountsList({ initial, error }: Props) {
   return (
     <>
       {/* HEADER: + button --------------------------------------------- */}
-      <div className="mb-4 flex items-center justify-end">
+      <div className="mb-6 flex items-center justify-end">
         <button
           className="hud-button"
           onClick={() => setShowModal(true)}
@@ -63,21 +63,21 @@ export function AccountsList({ initial, error }: Props) {
         </button>
       </div>
 
-      {error  && <p className="mb-3 text-hud-loss">Could not load accounts: {error}</p>}
-      {errMsg && <p className="mb-3 text-hud-loss">{errMsg}</p>}
+      {error  && <p className="mb-4 text-sm text-hud-loss">Could not load accounts: {error}</p>}
+      {errMsg && <p className="mb-4 text-sm text-hud-loss">{errMsg}</p>}
 
       {/* GRID --------------------------------------------------------- */}
       {accounts.length === 0 ? (
-        <p className="text-hud-muted">No accounts yet. Click + to add one.</p>
+        <p className="py-8 text-sm text-hud-muted">No accounts yet. Click + to add one.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {accounts.map((a) => {
             const rule = ACCOUNT_TYPES[a.account_type];
             const confirming = pendingDelete === a.id;
             return (
               <div
                 key={a.id}
-                className="hud-panel hud-card-hover scanlines relative p-4 animate-fade-up"
+                className="hud-panel hud-card-hover scanlines relative flex h-full flex-col p-6 transition-all duration-200 animate-fade-up"
               >
                 <span className="hud-corner top-1 left-1  border-l-2 border-t-2" />
                 <span className="hud-corner top-1 right-1 border-r-2 border-t-2" />
@@ -89,7 +89,7 @@ export function AccountsList({ initial, error }: Props) {
                   <button
                     aria-label="Delete account"
                     title="Delete account"
-                    className="absolute right-2 top-2 z-10 rounded p-1 text-hud-muted transition hover:bg-hud-loss/10 hover:text-hud-loss"
+                    className="absolute right-3 top-3 z-10 rounded p-1 text-hud-muted transition-colors duration-200 hover:bg-hud-loss/10 hover:text-hud-loss"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -100,19 +100,19 @@ export function AccountsList({ initial, error }: Props) {
                   </button>
                 ) : (
                   <div
-                    className="absolute right-2 top-2 z-10 flex items-center gap-2 rounded border border-hud-loss/40 bg-hud-bg/90 px-2 py-1 text-[10px] uppercase tracking-[0.18em]"
+                    className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded border border-hud-loss/40 bg-hud-bg/90 px-2 py-1 text-[10px] uppercase tracking-[0.18em]"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <span className="text-hud-loss">Sure?</span>
                     <button
-                      className="text-hud-loss hover:underline disabled:opacity-50"
+                      className="text-hud-loss transition-colors duration-200 hover:underline disabled:opacity-50"
                       disabled={busyDelete}
                       onClick={() => handleDelete(a.id)}
                     >
                       {busyDelete ? "…" : "Yes"}
                     </button>
                     <button
-                      className="text-hud-muted hover:underline"
+                      className="text-hud-muted transition-colors duration-200 hover:underline"
                       disabled={busyDelete}
                       onClick={() => setPendingDelete(null)}
                     >
@@ -124,15 +124,15 @@ export function AccountsList({ initial, error }: Props) {
                 {/* Card body — links into the dashboard for that account.
                     Each structured field is rendered on its own line so it
                     stays parseable for future trading logic.            */}
-                <Link href={`/account/${a.account_number}`} className="block">
+                <Link href={`/account/${a.account_number}`} className="flex h-full flex-col">
                   <p className="hud-label">#{a.account_number}</p>
-                  <p className="mt-1 font-mono text-2xl text-hud-accent">
+                  <p className="mt-2 font-mono text-3xl font-semibold leading-none tracking-tight text-hud-accent">
                     {a.account_size ?? a.name}
                   </p>
-                  <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-hud-neon/80">
+                  <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-hud-neon/80">
                     {rule?.label ?? a.account_type}
                   </p>
-                  <dl className="mt-3 space-y-1 font-mono text-xs">
+                  <dl className="mt-auto space-y-2 pt-5 font-mono text-xs">
                     <div className="flex justify-between gap-3">
                       <dt className="text-hud-muted">Company</dt>
                       <dd className="text-hud-text">

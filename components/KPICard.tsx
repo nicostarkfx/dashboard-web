@@ -47,7 +47,7 @@ export function KPICard({
   return (
     <div
       className={
-        "hud-panel hud-card-hover scanlines p-4 " +
+        "hud-panel hud-card-hover scanlines p-5 transition-all duration-200 " +
         toneHoverClass[tone] +
         (active ? " hud-glow-pulse" : "")
       }
@@ -58,11 +58,11 @@ export function KPICard({
       <span className="hud-corner bottom-1 right-1 border-r-2 border-b-2" />
 
       <p className="hud-label">{label}</p>
-      <p className={`mt-2 font-mono text-3xl font-semibold tracking-tight ${toneClass[tone]}`}>
+      <p className={`mt-3 font-mono text-3xl font-semibold leading-none tracking-tight ${toneClass[tone]}`}>
         <AnimatedValue>{value}</AnimatedValue>
       </p>
       {hint && (
-        <p className="mt-1 text-[11px] text-hud-muted">
+        <p className="mt-2 text-[11px] leading-tight text-hud-muted">
           <AnimatedValue>{hint}</AnimatedValue>
         </p>
       )}

@@ -88,19 +88,22 @@ export default async function AccountPage({ params }: Params) {
   );
 
   return (
-    <main className="space-y-8">
+    <main className="space-y-10">
       {/* ---------------- HEADER ---------------- */}
       <header className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <Link href="/dashboard" className="text-[11px] uppercase tracking-[0.25em] text-hud-muted hover:text-hud-neon">
+          <Link
+            href="/dashboard"
+            className="text-[11px] uppercase tracking-[0.25em] text-hud-muted transition-colors duration-200 hover:text-hud-neon"
+          >
             ← All accounts
           </Link>
-          <p className="mt-3 hud-label">Account #{account.account_number}</p>
-          <h1 className="font-display text-4xl tracking-[0.2em] text-hud-neon">
+          <p className="mt-4 hud-label">Account #{account.account_number}</p>
+          <h1 className="font-display text-4xl font-semibold tracking-[0.2em] text-hud-neon">
             {account.name}
-            <span className="ml-3 text-base text-hud-muted">· {account.owner}</span>
+            <span className="ml-3 text-base font-normal text-hud-muted">· {account.owner}</span>
           </h1>
-          <div className="mt-3"><RuleBadge rule={rule} /></div>
+          <div className="mt-4"><RuleBadge rule={rule} /></div>
         </div>
 
         <div className="flex flex-col items-end gap-3">
@@ -127,7 +130,7 @@ export default async function AccountPage({ params }: Params) {
       <div className="hud-divider" />
 
       {/* ---------------- KPIs ---------------- */}
-      <section className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KPICard
           label="Total PnL"
           value={fmtUsd(stats.total_pnl_usd)}
@@ -180,36 +183,18 @@ export default async function AccountPage({ params }: Params) {
       </HudPanel>
 
       {/* ---------------- DAILY + TRADES + BLOCKERS ----------------
-          Wrapping flex column with a viewport-bounded height on lg
-          so the top row never grows past the screen and scrolling
-          lives INSIDE each panel.
-
-          - WRAPPER:    `flex flex-col` + `lg:h-[70vh] lg:min-h-[520px]`
-                        gives a known bounded height the children can
-                        flex against. `min-h-0` lets descendants
-                        actually shrink (without it, flex-1 children
-                        would still grow to fit content).
-          - TOP ROW:    `grid grid-cols-3 flex-1 min-h-0` — flex-1
-                        eats the wrapper height; min-h-0 + grid
-                        align-items: stretch makes both panels
-                        identical in height regardless of content.
-          - PANELS:     `min-h-0` on each grid item so HudPanel's
-                        internal `flex-1 min-h-0` body can actually
-                        scroll instead of pushing the parent.
-          - BLOCKERS:   below the grid, full-width, NO flex-1, NO
-                        shrink, natural height. Sits inside the same
-                        flex column so it stacks visually but does
-                        not participate in the top-row alignment. */}
-      <div className="flex min-h-0 flex-col gap-8 lg:h-[70vh] lg:min-h-[520px]">
-        {/* TOP ROW — Daily + Ledger, same height, internal scroll */}
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-8 lg:grid-cols-3">
-          <HudPanel
-            title="Daily breakdown"
-            className="min-h-0 lg:col-span-1"
-            bodyClassName="overflow-y-auto pr-1"
-          >
+          Natural-height layout: panels grow with their content. The
+          fixed `lg:h-[70vh]` wrapper and inner scroll containers were
+          removed in the polish pass — readers can scroll the page
+          instead of scrubbing inside cramped panels. align-items on
+          the grid still keeps Daily + Ledger top-aligned at the same
+          start line on lg viewports. */}
+      <div className="flex flex-col gap-8">
+        {/* TOP ROW — Daily + Ledger, top-aligned, natural heights */}
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
+          <HudPanel title="Daily breakdown" className="lg:col-span-1">
             {daily.length === 0 ? (
-              <div className="flex flex-1 items-center justify-center text-hud-muted">
+              <div className="flex flex-1 items-center justify-center py-8 text-sm text-hud-muted">
                 No days yet.
               </div>
             ) : (
@@ -217,7 +202,7 @@ export default async function AccountPage({ params }: Params) {
                 {daily.map(d => (
                   <li
                     key={d.date}
-                    className="flex items-center justify-between rounded px-2 py-1 hover:bg-hud-neon/5"
+                    className="flex items-center justify-between rounded px-3 py-2.5 transition-colors duration-200 hover:bg-hud-neon/5"
                   >
                     <span className="flex items-center gap-2 text-hud-text">
                       <span className={
@@ -227,9 +212,10 @@ export default async function AccountPage({ params }: Params) {
                       {d.date}
                     </span>
                     <span className={
-                      d.daily_pnl_usd > 0 ? "text-hud-win"
+                      "tabular-nums " +
+                      (d.daily_pnl_usd > 0 ? "text-hud-win"
                       : d.daily_pnl_usd < 0 ? "text-hud-loss"
-                      : "text-hud-muted"
+                      : "text-hud-muted")
                     }>
                       {fmtUsd(d.daily_pnl_usd)} · {fmtPct(d.daily_pnl_percent, 2)}
                     </span>
@@ -239,24 +225,18 @@ export default async function AccountPage({ params }: Params) {
             )}
           </HudPanel>
 
-          <HudPanel
-            title="Trade ledger"
-            className="min-h-0 lg:col-span-2"
-            bodyClassName="overflow-hidden"
-          >
+          <HudPanel title="Trade ledger" className="lg:col-span-2">
             <TradeLedger account={account} cycle={cycle} initialTrades={trades} />
           </HudPanel>
         </div>
 
-        {/* BOTTOM ROW — Payout blockers, full width, natural height.
-            No flex-1, no shrink, no height constraint — just sits
-            here at whatever size its content demands. */}
+        {/* BOTTOM ROW — Payout blockers, full width, natural height. */}
         {!stats.payout_eligible && stats.reasons_blocked.length > 0 && (
           <HudPanel
             title="Payout blockers"
             subtitle="Resolve these before requesting payout"
           >
-            <ul className="list-disc space-y-1 pl-6 text-xs text-hud-muted">
+            <ul className="list-disc space-y-1.5 pl-6 text-sm text-hud-muted">
               {stats.reasons_blocked.map(r => <li key={r}>{r}</li>)}
             </ul>
           </HudPanel>

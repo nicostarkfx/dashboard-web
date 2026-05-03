@@ -82,12 +82,11 @@ export function TradeLedger({ account, cycle, initialTrades }: Props) {
 
   return (
     <>
-      {/* Inner flex column so the action bar stays pinned and the table
-          claims all leftover height. The outer HudPanel body is already
-          `flex flex-1 min-h-0 flex-col`, so this child just needs to do
-          the same to chain the constraint down to the scroll container. */}
-      <div className="flex flex-1 min-h-0 flex-col">
-        <div className="mb-3 flex shrink-0 items-center justify-end">
+      {/* Natural-height column. No internal scroll container; the page lets
+          the ledger grow as long as the trade list demands. The outer
+          HudPanel body still flexes vertically when needed. */}
+      <div className="flex flex-1 flex-col">
+        <div className="mb-4 flex shrink-0 items-center justify-end">
           <button
             className="hud-button"
             onClick={() => setShowModal(true)}
@@ -98,21 +97,21 @@ export function TradeLedger({ account, cycle, initialTrades }: Props) {
         </div>
 
         {sorted.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center text-hud-muted">
+          <div className="flex flex-1 items-center justify-center py-8 text-sm text-hud-muted">
             No trades recorded for this cycle.
           </div>
         ) : (
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <table className="w-full text-left font-mono text-xs">
-            <thead className="sticky top-0 bg-hud-panel/95 text-hud-muted">
+          <div className="w-full">
+            <table className="w-full border-separate border-spacing-0 text-left font-mono text-xs tabular-nums">
+            <thead className="text-hud-muted">
               <tr className="border-b border-hud-border">
-                <th className="px-3 py-2 font-normal uppercase tracking-[0.18em]">Date</th>
-                <th className="px-3 py-2 font-normal uppercase tracking-[0.18em]">Pair</th>
-                <th className="px-3 py-2 font-normal uppercase tracking-[0.18em]">Side</th>
-                <th className="px-3 py-2 font-normal uppercase tracking-[0.18em]">Result</th>
-                <th className="px-3 py-2 text-right font-normal uppercase tracking-[0.18em]">PnL $</th>
-                <th className="px-3 py-2 text-right font-normal uppercase tracking-[0.18em]">PnL %</th>
-                <th className="px-3 py-2 text-right font-normal uppercase tracking-[0.18em] w-[1%]" aria-label="Actions"></th>
+                <th className="px-3 py-3 font-normal uppercase tracking-[0.18em]">Date</th>
+                <th className="px-3 py-3 font-normal uppercase tracking-[0.18em]">Pair</th>
+                <th className="px-3 py-3 font-normal uppercase tracking-[0.18em]">Side</th>
+                <th className="px-3 py-3 font-normal uppercase tracking-[0.18em]">Result</th>
+                <th className="px-3 py-3 text-right font-normal uppercase tracking-[0.18em]">PnL $</th>
+                <th className="px-3 py-3 text-right font-normal uppercase tracking-[0.18em]">PnL %</th>
+                <th className="px-3 py-3 text-right font-normal uppercase tracking-[0.18em] w-[1%]" aria-label="Actions"></th>
               </tr>
             </thead>
             <tbody>
@@ -134,16 +133,16 @@ export function TradeLedger({ account, cycle, initialTrades }: Props) {
                   <tr
                     key={t.id}
                     className={
-                      "border-b border-hud-border/40 transition-colors duration-200 hover:bg-hud-neon/5 " +
+                      "hud-row " +
                       (isDeleting ? "opacity-50 " : "") +
                       (isFresh ? "animate-fade-up " : "")
                     }
                   >
-                    <td className="px-3 py-2 text-hud-text">{formatTradeDate(t.date)}</td>
-                    <td className="px-3 py-2 text-hud-accent">{t.pair}</td>
-                    <td className="px-3 py-2 uppercase text-hud-muted">{t.side}</td>
+                    <td className="px-3 py-3 text-hud-text">{formatTradeDate(t.date)}</td>
+                    <td className="px-3 py-3 text-hud-accent">{t.pair}</td>
+                    <td className="px-3 py-3 uppercase text-hud-muted">{t.side}</td>
                     <td className={
-                      "px-3 py-2 uppercase " +
+                      "px-3 py-3 uppercase " +
                       (t.result === "win"
                         ? "text-hud-win"
                         : t.result === "loss"
@@ -152,13 +151,13 @@ export function TradeLedger({ account, cycle, initialTrades }: Props) {
                     }>
                       {t.result}
                     </td>
-                    <td className={`px-3 py-2 text-right ${pnlClass}`}>
+                    <td className={`px-3 py-3 text-right ${pnlClass}`}>
                       {fmtUsd(pnl)}
                     </td>
-                    <td className={`px-3 py-2 text-right ${pnlClass}`}>
+                    <td className={`px-3 py-3 text-right ${pnlClass}`}>
                       {fmtPct(Number(t.pnl_percent), 3)}
                     </td>
-                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <td className="px-3 py-3 text-right whitespace-nowrap">
                       {isConfirming ? (
                         <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em]">
                           <span className="text-hud-muted">Delete?</span>
@@ -166,7 +165,7 @@ export function TradeLedger({ account, cycle, initialTrades }: Props) {
                             type="button"
                             onClick={() => confirmDelete(t.id)}
                             disabled={isDeleting}
-                            className="rounded border border-hud-loss/60 px-2 py-0.5 text-hud-loss hover:bg-hud-loss/10 disabled:opacity-50"
+                            className="rounded border border-hud-loss/60 px-2 py-0.5 text-hud-loss transition-colors duration-200 hover:bg-hud-loss/10 disabled:opacity-50"
                             aria-label="Confirm delete"
                           >
                             {isDeleting ? "…" : "Yes"}
@@ -175,7 +174,7 @@ export function TradeLedger({ account, cycle, initialTrades }: Props) {
                             type="button"
                             onClick={() => setConfirmingId(null)}
                             disabled={isDeleting}
-                            className="rounded border border-hud-border px-2 py-0.5 text-hud-muted hover:bg-hud-neon/5 disabled:opacity-50"
+                            className="rounded border border-hud-border px-2 py-0.5 text-hud-muted transition-colors duration-200 hover:bg-hud-neon/5 disabled:opacity-50"
                             aria-label="Cancel delete"
                           >
                             No
@@ -185,7 +184,7 @@ export function TradeLedger({ account, cycle, initialTrades }: Props) {
                         <button
                           type="button"
                           onClick={() => setConfirmingId(t.id)}
-                          className="rounded border border-transparent px-1.5 py-0.5 text-hud-muted hover:border-hud-loss/40 hover:text-hud-loss focus:border-hud-loss/60 focus:outline-none"
+                          className="rounded border border-transparent px-1.5 py-0.5 text-hud-muted transition-colors duration-200 hover:border-hud-loss/40 hover:text-hud-loss focus:border-hud-loss/60 focus:outline-none"
                           aria-label={`Delete trade ${t.pair} on ${formatTradeDate(t.date)}`}
                           title="Delete trade"
                         >

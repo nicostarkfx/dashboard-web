@@ -182,7 +182,10 @@ html::before {
  * ==================================================================== */
 @layer components {
   .hud-panel {
-    @apply relative rounded-md border border-hud-border bg-hud-panel/80 backdrop-blur-sm shadow-neon-soft;
+    /* Bumped from rounded-md to rounded-2xl for a more modern/institutional
+       silhouette — matches the auth panel and the rest of the polish pass.
+       Color tokens unchanged. */
+    @apply relative rounded-2xl border border-hud-border bg-hud-panel/80 backdrop-blur-sm shadow-neon-soft;
     transition: transform 220ms ease-out,
                 box-shadow 220ms ease-out,
                 border-color 220ms ease-out;
@@ -273,6 +276,21 @@ html::before {
   }
   .hud-input:focus::placeholder {
     opacity: 0.18;
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  .hud-row — table/list row primitive
+   *
+   *  Subtle bottom separator + smooth hover tint. Reuses the existing
+   *  hud-border/hud-neon palette so the row treatment matches the rest
+   *  of the HUD theme.
+   * ------------------------------------------------------------------ */
+  .hud-row {
+    border-bottom: 1px solid rgba(34, 211, 238, 0.06);
+    transition: background-color 200ms ease-out;
+  }
+  .hud-row:hover {
+    background-color: rgba(34, 211, 238, 0.04);
   }
 }
 

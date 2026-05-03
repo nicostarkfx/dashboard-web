@@ -39,22 +39,22 @@ export function HudPanel({
   children
 }: HudPanelProps) {
   return (
-    <div className={`hud-panel flex flex-col p-5 ${className}`}>
+    <div className={`hud-panel flex flex-col p-6 ${className}`}>
       <span className="hud-corner top-1 left-1  border-l-2 border-t-2" />
       <span className="hud-corner top-1 right-1 border-r-2 border-t-2" />
       <span className="hud-corner bottom-1 left-1  border-l-2 border-b-2" />
       <span className="hud-corner bottom-1 right-1 border-r-2 border-b-2" />
 
       {(title || right) && (
-        <header className="mb-4 flex shrink-0 items-end justify-between gap-4">
+        <header className="mb-5 flex shrink-0 items-end justify-between gap-4">
           <div>
             {title && (
-              <h3 className="text-sm uppercase tracking-[0.25em] text-hud-neon">
+              <h3 className="text-sm font-medium uppercase tracking-[0.25em] text-hud-neon">
                 {title}
               </h3>
             )}
             {subtitle && (
-              <p className="mt-1 text-xs text-hud-muted">{subtitle}</p>
+              <p className="mt-2 text-xs text-hud-muted">{subtitle}</p>
             )}
           </div>
           {right}

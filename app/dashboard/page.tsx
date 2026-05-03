@@ -55,14 +55,14 @@ export default async function Home() {
   }
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-8">
       <header className="flex items-end justify-between">
         <div>
           <p className="hud-label">SYSTEM ONLINE</p>
-          <h1 className="font-display text-3xl tracking-[0.25em] text-hud-neon">
+          <h1 className="font-display text-3xl font-semibold tracking-[0.25em] text-hud-neon">
             TRADING&nbsp;HUD
           </h1>
-          <p className="mt-1 text-xs text-hud-muted">Funded account control panel</p>
+          <p className="mt-2 text-xs text-hud-muted">Funded account control panel</p>
         </div>
       </header>
 
