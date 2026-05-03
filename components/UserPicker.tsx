@@ -8,8 +8,8 @@ import { MOCK_USERS, type MockUser } from "@/lib/mockUsers";
  * Access terminal at "/".
  *
  * Visual-only multi-user picker — no auth, no Supabase. The selected
- * user's id is stashed in sessionStorage("jarvis_user") so future per-user
- * filtering can read it; today /dashboard ignores the value.
+ * user's id is stashed in sessionStorage("trading_user") so future
+ * per-user filtering can read it; today /dashboard ignores the value.
  *
  * UX:
  *   - Click an unselected card → select it (neon ring)
@@ -25,7 +25,7 @@ export function UserPicker() {
 
   function enter(user: MockUser) {
     try {
-      sessionStorage.setItem("jarvis_user", user.id);
+      sessionStorage.setItem("trading_user", user.id);
     } catch {
       // SSR / disabled storage — just navigate without persistence.
     }

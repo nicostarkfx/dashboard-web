@@ -3,7 +3,7 @@
  *
  * No backend, no auth — just visual entries the user picks before
  * entering /dashboard. The selected user's `id` is persisted to
- * sessionStorage("jarvis_user") on entry; downstream code can read
+ * sessionStorage("trading_user") on entry; downstream code can read
  * that key once we wire per-user data filtering.
  */
 export interface MockUser {

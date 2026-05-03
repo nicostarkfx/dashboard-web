@@ -1,7 +1,7 @@
 // TODO: redirect to "/" if no user session (cuando implementemos auth)
 //
-// Today the user picker at "/" stores the chosen operator id in
-// sessionStorage("jarvis_user") but this server component does NOT yet
+// Today the auth shell at "/" stores the entered email in
+// sessionStorage("trading_user") but this server component does NOT yet
 // gate access on it. When auth lands, read the cookie/session here and
 // `redirect("/")` if missing, before the data fetch runs.
 

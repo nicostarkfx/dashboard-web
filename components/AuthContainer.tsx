@@ -9,13 +9,21 @@ import { useRouter } from "next/navigation";
  * One client component, three views (login / register / forgot) toggled
  * by internal state. No backend, no Supabase, no fetch — login and
  * register simply normalize the email and stash it in
- * sessionStorage("jarvis_user") before navigating to /dashboard.
+ * sessionStorage("trading_user") before navigating to /dashboard.
  *
  * Submit-on-Enter is handled natively by <form onSubmit>; the primary
  * action button is type="submit" and secondary view-switch buttons are
  * explicitly type="button" so they don't accidentally submit the form.
+ *
+ * UX polish (mock-only):
+ *   - Submit shows "Access granted" / "Link enviado (mock)" inline
+ *   - 600ms delay before navigation so the user sees the confirmation
+ *   - Button shows a busy label ("AUTHENTICATING…", etc.) during delay
+ *   - The whole panel breathes subtly via .hud-panel-breathe
  */
 type View = "login" | "register" | "forgot";
+
+const REDIRECT_DELAY_MS = 600;
 
 const subtitleFor = (view: View): string => {
   if (view === "login")    return "Operator login";
@@ -27,6 +35,18 @@ const panelTitleFor = (view: View): string => {
   if (view === "login")    return "LOGIN";
   if (view === "register") return "REGISTER";
   return "RECOVERY";
+};
+
+const idleButtonLabel = (view: View): string => {
+  if (view === "login")    return "INGRESAR";
+  if (view === "register") return "CREAR CUENTA";
+  return "ENVIAR LINK";
+};
+
+const busyButtonLabel = (view: View): string => {
+  if (view === "login")    return "AUTHENTICATING…";
+  if (view === "register") return "CREATING…";
+  return "SENDING…";
 };
 
 export function AuthContainer() {
@@ -46,6 +66,7 @@ export function AuthContainer() {
    * login ↔ register ↔ forgot.
    */
   function goTo(next: View): void {
+    if (busy) return; // freeze view-switching during the redirect window
     setView(next);
     setPassword("");
     setConfirm("");
@@ -56,7 +77,7 @@ export function AuthContainer() {
   function persistAndEnter(rawEmail: string): void {
     const normalized = rawEmail.trim().toLowerCase();
     try {
-      sessionStorage.setItem("jarvis_user", normalized);
+      sessionStorage.setItem("trading_user", normalized);
     } catch {
       // SSR / storage disabled — ignore, still navigate.
     }
@@ -65,54 +86,56 @@ export function AuthContainer() {
 
   function handleSubmit(e: FormEvent<HTMLFormElement>): void {
     e.preventDefault();
+    if (busy) return;
     setError(null);
     setSuccess(null);
 
     if (view === "login") {
       if (!email.trim() || !password) {
-        setError("Email and password are required.");
+        setError("All fields are required");
         return;
       }
       setBusy(true);
-      persistAndEnter(email);
+      setSuccess("Access granted");
+      window.setTimeout(() => persistAndEnter(email), REDIRECT_DELAY_MS);
       return;
     }
 
     if (view === "register") {
       if (!email.trim() || !password || !confirm) {
-        setError("All fields are required.");
+        setError("All fields are required");
         return;
       }
       if (password !== confirm) {
-        setError("Passwords don't match.");
+        setError("Passwords don't match");
         return;
       }
       setBusy(true);
-      persistAndEnter(email);
+      setSuccess("Access granted");
+      window.setTimeout(() => persistAndEnter(email), REDIRECT_DELAY_MS);
       return;
     }
 
     // forgot
     if (!email.trim()) {
-      setError("Email is required.");
+      setError("Email is required");
       return;
     }
-    setSuccess("Link enviado (mock)");
+    setBusy(true);
+    window.setTimeout(() => {
+      setSuccess("Link enviado (mock)");
+      setBusy(false);
+    }, REDIRECT_DELAY_MS);
   }
 
   // ----- render --------------------------------------------------------
-  const inputClass =
-    "w-full bg-transparent border-b border-hud-muted/40 px-0 py-2 " +
-    "font-mono text-hud-neon placeholder:text-hud-muted/40 " +
-    "focus:outline-none focus:border-hud-neon transition";
-
   return (
     <main className="mx-auto flex min-h-[80vh] w-full max-w-md flex-col justify-center space-y-6 py-10">
       {/* Header --------------------------------------------------------- */}
       <header className="text-center">
         <p className="hud-label">ACCESS TERMINAL</p>
         <h1 className="font-display text-3xl tracking-[0.25em] text-hud-neon">
-          JARVIS&nbsp;TRADING&nbsp;SYSTEM
+          TRADING&nbsp;SYSTEM
         </h1>
         <p className="mt-2 text-xs uppercase tracking-[0.25em] text-hud-muted">
           {subtitleFor(view)}
@@ -122,7 +145,7 @@ export function AuthContainer() {
       <div className="hud-divider" />
 
       {/* Panel ---------------------------------------------------------- */}
-      <div className="hud-panel scanlines relative p-6">
+      <div className="hud-panel hud-panel-breathe scanlines relative p-6">
         <span className="hud-corner top-1 left-1  border-l-2 border-t-2" />
         <span className="hud-corner top-1 right-1 border-r-2 border-t-2" />
         <span className="hud-corner bottom-1 left-1  border-l-2 border-b-2" />
@@ -146,8 +169,9 @@ export function AuthContainer() {
               autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="operator@jarvis.io"
-              className={inputClass}
+              placeholder="user@system.io"
+              disabled={busy}
+              className="hud-input"
             />
           </div>
 
@@ -165,7 +189,8 @@ export function AuthContainer() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className={inputClass}
+                disabled={busy}
+                className="hud-input"
               />
             </div>
           )}
@@ -184,7 +209,8 @@ export function AuthContainer() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="••••••••"
-                className={inputClass}
+                disabled={busy}
+                className="hud-input"
               />
             </div>
           )}
@@ -205,11 +231,15 @@ export function AuthContainer() {
           <button
             type="submit"
             disabled={busy}
-            className="hud-button w-full justify-center disabled:cursor-not-allowed disabled:opacity-40"
+            className="hud-button w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {view === "login"    && <>INGRESAR <span aria-hidden="true">→</span></>}
-            {view === "register" && <>CREAR CUENTA <span aria-hidden="true">→</span></>}
-            {view === "forgot"   && <>ENVIAR LINK <span aria-hidden="true">→</span></>}
+            {busy ? (
+              busyButtonLabel(view)
+            ) : (
+              <>
+                {idleButtonLabel(view)} <span aria-hidden="true">→</span>
+              </>
+            )}
           </button>
         </form>
 
@@ -220,14 +250,16 @@ export function AuthContainer() {
               <button
                 type="button"
                 onClick={() => goTo("register")}
-                className="text-hud-muted transition hover:text-hud-neon"
+                disabled={busy}
+                className="text-hud-muted transition hover:text-hud-neon disabled:opacity-40"
               >
                 Crear cuenta
               </button>
               <button
                 type="button"
                 onClick={() => goTo("forgot")}
-                className="text-hud-muted transition hover:text-hud-neon"
+                disabled={busy}
+                className="text-hud-muted transition hover:text-hud-neon disabled:opacity-40"
               >
                 Olvidé mi contraseña
               </button>
@@ -237,7 +269,8 @@ export function AuthContainer() {
             <button
               type="button"
               onClick={() => goTo("login")}
-              className="text-hud-muted transition hover:text-hud-neon"
+              disabled={busy}
+              className="text-hud-muted transition hover:text-hud-neon disabled:opacity-40"
             >
               ← Volver a login
             </button>
