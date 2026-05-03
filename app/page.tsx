@@ -1,34 +1,17 @@
-import { HudPanel } from "@/components/HudPanel";
-import { UserPicker } from "@/components/UserPicker";
+import { AuthContainer } from "@/components/AuthContainer";
 
 /**
- * Access terminal — the new root route.
+ * Access terminal — root route.
  *
- * Renders the HUD-styled multi-user picker. Selecting a user and
- * confirming routes to /dashboard (which still hosts what used to live
- * at "/"). No backend, no auth — see <UserPicker /> for the UX details.
+ * Renders the HUD-styled auth shell (login / register / forgot — view
+ * switching lives inside <AuthContainer />). No backend yet: a successful
+ * login or register stashes the normalized email in
+ * sessionStorage("jarvis_user") and routes to /dashboard.
+ *
+ * The header ("ACCESS TERMINAL / JARVIS TRADING SYSTEM") is rendered
+ * *inside* AuthContainer so the whole access screen can be centered as a
+ * single unit.
  */
 export default function AccessTerminal() {
-  return (
-    <main className="space-y-6">
-      <header>
-        <p className="hud-label">ACCESS TERMINAL</p>
-        <h1 className="font-display text-3xl tracking-[0.25em] text-hud-neon">
-          JARVIS&nbsp;TRADING&nbsp;SYSTEM
-        </h1>
-        <p className="mt-1 text-xs text-hud-muted">
-          Select operator to enter the console
-        </p>
-      </header>
-
-      <div className="hud-divider" />
-
-      <HudPanel
-        title="Operators"
-        subtitle="Mock multi-user — no backend wired yet"
-      >
-        <UserPicker />
-      </HudPanel>
-    </main>
-  );
+  return <AuthContainer />;
 }
