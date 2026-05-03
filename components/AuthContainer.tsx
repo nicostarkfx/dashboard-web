@@ -2,23 +2,30 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 /**
- * AuthContainer — visual-only auth shell.
+ * AuthContainer — auth shell wired to Supabase Auth.
  *
  * One client component, three views (login / register / forgot) toggled
- * by internal state. No backend, no Supabase, no fetch — login and
- * register simply normalize the email and stash it in
- * sessionStorage("trading_user") before navigating to /dashboard.
+ * by internal state. Submit handlers call the real Supabase auth API:
+ *   - login    → supabase.auth.signInWithPassword
+ *   - register → supabase.auth.signUp
+ *   - forgot   → supabase.auth.resetPasswordForEmail
+ *
+ * Errors surface inline (no alerts). The session lives in HttpOnly
+ * cookies via @supabase/ssr's createBrowserClient, so middleware.ts
+ * and server components can gate `/dashboard` and `/account/*`.
  *
  * Submit-on-Enter is handled natively by <form onSubmit>; the primary
  * action button is type="submit" and secondary view-switch buttons are
  * explicitly type="button" so they don't accidentally submit the form.
  *
- * UX polish (mock-only):
- *   - Submit shows "Access granted" / "Link enviado (mock)" inline
- *   - 600ms delay before navigation so the user sees the confirmation
- *   - Button shows a busy label ("AUTHENTICATING…", etc.) during delay
+ * UX:
+ *   - Inline "Access granted" / "Link enviado" success messages
+ *   - 600ms delay on success before redirect (lets the user see it)
+ *   - Button shows a busy label ("AUTHENTICATING…", etc.) during the
+ *     async call and the redirect window
  *   - The whole panel breathes subtly via .hud-panel-breathe
  */
 type View = "login" | "register" | "forgot";
@@ -74,35 +81,44 @@ export function AuthContainer() {
     setSuccess(null);
   }
 
-  function persistAndEnter(rawEmail: string): void {
-    const normalized = rawEmail.trim().toLowerCase();
-    try {
-      sessionStorage.setItem("trading_user", normalized);
-    } catch {
-      // SSR / storage disabled — ignore, still navigate.
-    }
+  function enterDashboard(): void {
+    // After router.push, refresh so server components re-run and
+    // middleware sees the freshly minted auth cookie.
     router.push("/dashboard");
+    router.refresh();
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>): void {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     if (busy) return;
     setError(null);
     setSuccess(null);
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     if (view === "login") {
-      if (!email.trim() || !password) {
+      if (!normalizedEmail || !password) {
         setError("All fields are required");
         return;
       }
       setBusy(true);
+      const supabase = getSupabaseClient();
+      const { error: authErr } = await supabase.auth.signInWithPassword({
+        email:    normalizedEmail,
+        password,
+      });
+      if (authErr) {
+        setBusy(false);
+        setError(authErr.message);
+        return;
+      }
       setSuccess("Access granted");
-      window.setTimeout(() => persistAndEnter(email), REDIRECT_DELAY_MS);
+      window.setTimeout(enterDashboard, REDIRECT_DELAY_MS);
       return;
     }
 
     if (view === "register") {
-      if (!email.trim() || !password || !confirm) {
+      if (!normalizedEmail || !password || !confirm) {
         setError("All fields are required");
         return;
       }
@@ -111,21 +127,45 @@ export function AuthContainer() {
         return;
       }
       setBusy(true);
-      setSuccess("Access granted");
-      window.setTimeout(() => persistAndEnter(email), REDIRECT_DELAY_MS);
+      const supabase = getSupabaseClient();
+      const { data, error: authErr } = await supabase.auth.signUp({
+        email:    normalizedEmail,
+        password,
+      });
+      if (authErr) {
+        setBusy(false);
+        setError(authErr.message);
+        return;
+      }
+      // signUp returns a session immediately when email confirmation is
+      // disabled in the Supabase project; otherwise data.session is null
+      // and the user must click the confirmation link first.
+      if (data.session) {
+        setSuccess("Access granted");
+        window.setTimeout(enterDashboard, REDIRECT_DELAY_MS);
+      } else {
+        setBusy(false);
+        setSuccess("Check your email to confirm");
+      }
       return;
     }
 
     // forgot
-    if (!email.trim()) {
+    if (!normalizedEmail) {
       setError("Email is required");
       return;
     }
     setBusy(true);
-    window.setTimeout(() => {
-      setSuccess("Link enviado (mock)");
-      setBusy(false);
-    }, REDIRECT_DELAY_MS);
+    const supabase = getSupabaseClient();
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
+      normalizedEmail,
+    );
+    setBusy(false);
+    if (resetErr) {
+      setError(resetErr.message);
+      return;
+    }
+    setSuccess("Link enviado");
   }
 
   // ----- render --------------------------------------------------------

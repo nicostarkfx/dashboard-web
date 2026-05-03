@@ -1,13 +1,11 @@
-// TODO: redirect to "/" if no user session (cuando implementemos auth)
-//
-// Today the auth shell at "/" stores the entered email in
-// sessionStorage("trading_user") but this server component does NOT yet
-// gate access on it. When auth lands, read the cookie/session here and
-// `redirect("/")` if missing, before the data fetch runs.
+// Route protection: middleware.ts gates `/dashboard` (and `/account/*`)
+// against the Supabase session cookie and redirects unauthenticated
+// requests to "/". This server component runs only when a session exists.
 
 import { serverClient } from "@/lib/supabase";
 import { HudPanel } from "@/components/HudPanel";
 import { AccountsList } from "@/components/AccountsList";
+import { LogoutButton } from "@/components/LogoutButton";
 import type { Account } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +62,7 @@ export default async function Home() {
           </h1>
           <p className="mt-2 text-xs text-hud-muted">Funded account control panel</p>
         </div>
+        <LogoutButton />
       </header>
 
       <div className="hud-divider" />
