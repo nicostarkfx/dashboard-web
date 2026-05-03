@@ -113,7 +113,13 @@ class QueryBuilder<T = unknown> {
   // ---- internal -----------------------------------------------------
   private applyFilters(rows: Record<string, unknown>[]): Record<string, unknown>[] {
     if (!this.filters.length) return rows;
-    return rows.filter((r) => this.filters.every((f) => r[f.col] === f.val));
+    // The mock seed (lib/mockSeed.ts) doesn't carry a `user_id` column —
+    // it predates multi-user support. Real-mode queries now scope by
+    // `user_id`, so we *ignore* that filter in mock mode to keep dev
+    // visibility into the seed data. All other filters apply normally.
+    return rows.filter((r) =>
+      this.filters.every((f) => f.col === "user_id" || r[f.col] === f.val),
+    );
   }
 
   private applyOrders(rows: Record<string, unknown>[]): Record<string, unknown>[] {

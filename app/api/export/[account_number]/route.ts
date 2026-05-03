@@ -1,4 +1,5 @@
 import { serverClient } from "@/lib/supabase";
+import { getServerUser } from "@/lib/supabaseServer";
 import { getRule } from "@/lib/accountTypes";
 import { computeCycleStats, tradesToCsv } from "@/lib/calculations";
 import type { Account, Cycle, Trade } from "@/lib/types";
@@ -11,11 +12,21 @@ export async function GET(
   _req: Request,
   { params }: { params: { account_number: string } }
 ) {
+  // ── auth: stop execution if the caller has no session ──
+  let user;
+  try {
+    user = await getServerUser();
+  } catch {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const supabase = serverClient();
 
   const { data: acct } = await supabase
     .from("accounts").select("*")
     .eq("account_number", params.account_number)
+    // ── multi-user filter: only this user's account ──
+    .eq("user_id", user.id)
     .maybeSingle();
   if (!acct) {
     return new Response("Account not found", { status: 404 });

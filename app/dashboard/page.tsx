@@ -3,6 +3,7 @@
 // requests to "/". This server component runs only when a session exists.
 
 import { serverClient } from "@/lib/supabase";
+import { getServerUser } from "@/lib/supabaseServer";
 import { HudPanel } from "@/components/HudPanel";
 import { AccountsList } from "@/components/AccountsList";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -23,10 +24,15 @@ export default async function Home() {
   let errorMessage: string | null = null;
 
   try {
+    // ── auth: identify the caller (middleware already gates this route) ──
+    const user = await getServerUser();
+
     const supabase = serverClient();
     const { data: rows, error } = await supabase
       .from("accounts")
       .select("*")
+      // ── multi-user filter: only this user's accounts ──
+      .eq("user_id", user.id)
       .order("created_at", { ascending: true });
 
     if (error) {

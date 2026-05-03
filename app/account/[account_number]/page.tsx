@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { serverClient } from "@/lib/supabase";
+import { getServerUser } from "@/lib/supabaseServer";
 import { getRule } from "@/lib/accountTypes";
 import {
   aggregateByDay,
@@ -35,13 +36,18 @@ interface Params {
  * without round-tripping logic to the DB.
  */
 export default async function AccountPage({ params }: Params) {
+  // ── auth: identify the caller (middleware already gates this route) ──
+  const user = await getServerUser();
+
   const supabase = serverClient();
 
-  // 1) account
+  // 1) account — scoped to the authenticated user
   const { data: acct, error: aErr } = await supabase
     .from("accounts")
     .select("*")
     .eq("account_number", params.account_number)
+    // ── multi-user filter: only this user's account ──
+    .eq("user_id", user.id)
     .maybeSingle();
 
   if (aErr) throw new Error(aErr.message);

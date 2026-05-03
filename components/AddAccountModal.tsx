@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { browserClient } from "@/lib/supabase";
+import { getCurrentUser } from "@/lib/supabaseClient";
 import { ACCOUNT_TYPES } from "@/lib/accountTypes";
 import type { Account } from "@/lib/types";
 
@@ -59,6 +60,17 @@ export function AddAccountModal({ onClose, onCreated }: Props) {
     }
 
     setBusy(true);
+
+    // ── auth: stop execution if no user is signed in ──
+    let user;
+    try {
+      user = await getCurrentUser();
+    } catch (e) {
+      setBusy(false);
+      setError(e instanceof Error ? e.message : "Not authenticated");
+      return;
+    }
+
     const supabase = browserClient();
 
     // Each field is stored in its OWN column. No concatenation. The legacy
@@ -83,7 +95,10 @@ export function AddAccountModal({ onClose, onCreated }: Props) {
         // legacy mirrors — kept so existing reads keep working
         name:            accountSizeStr,
         owner:           ownerNameStr,
-        initial_balance: initial
+        initial_balance: initial,
+
+        // ── multi-user: tie row to the creator ──
+        user_id:         user.id,
       })
       .select()
       .single();

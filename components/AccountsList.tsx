@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { browserClient } from "@/lib/supabase";
+import { getCurrentUser } from "@/lib/supabaseClient";
 import { ACCOUNT_TYPES } from "@/lib/accountTypes";
 import type { Account } from "@/lib/types";
 import { AddAccountModal } from "./AddAccountModal";
@@ -38,8 +39,24 @@ export function AccountsList({ initial, error }: Props) {
   async function handleDelete(id: string) {
     setBusyDelete(true);
     setErrMsg(null);
+
+    // ── auth: stop execution if no user is signed in ──
+    let user;
+    try {
+      user = await getCurrentUser();
+    } catch (e) {
+      setBusyDelete(false);
+      setErrMsg(e instanceof Error ? e.message : "Not authenticated");
+      return;
+    }
+
     const supabase = browserClient();
-    const { error: delErr } = await supabase.from("accounts").delete().eq("id", id);
+    const { error: delErr } = await supabase
+      .from("accounts")
+      .delete()
+      .eq("id", id)
+      // ── multi-user filter: only delete rows owned by this user ──
+      .eq("user_id", user.id);
     setBusyDelete(false);
     if (delErr) {
       setErrMsg(delErr.message);

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { serverClient } from "@/lib/supabase";
+import { getServerUser } from "@/lib/supabaseServer";
 import { getRule } from "@/lib/accountTypes";
 import { computeCycleStats } from "@/lib/calculations";
 import type { Account, Cycle, Trade } from "@/lib/types";
@@ -15,12 +16,22 @@ export async function POST(
   _req: Request,
   { params }: { params: { account_number: string } }
 ) {
+  // ── auth: stop execution if the caller has no session ──
+  let user;
+  try {
+    user = await getServerUser();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const supabase = serverClient();
 
-  // load account + active cycle
+  // load account + active cycle (scoped to the authenticated user)
   const { data: acct, error: aErr } = await supabase
     .from("accounts").select("*")
     .eq("account_number", params.account_number)
+    // ── multi-user filter: only this user's account ──
+    .eq("user_id", user.id)
     .maybeSingle();
   if (aErr || !acct) {
     return NextResponse.json({ error: "Account not found" }, { status: 404 });

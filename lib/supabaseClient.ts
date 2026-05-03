@@ -15,7 +15,7 @@
  * login/signup/logout exercise the real auth backend.
  */
 import { createBrowserClient } from "@supabase/ssr";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 let _client: SupabaseClient | null = null;
 
@@ -33,4 +33,16 @@ export function getSupabaseClient(): SupabaseClient {
 
   _client = createBrowserClient(url, key);
   return _client;
+}
+
+/**
+ * Browser-side helper: returns the authenticated user or throws.
+ * Used by mutation handlers (insert/delete) that need `user.id`.
+ */
+export async function getCurrentUser(): Promise<User> {
+  const supabase = getSupabaseClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  if (!user) throw new Error("[auth] no authenticated user");
+  return user;
 }
