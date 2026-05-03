@@ -92,7 +92,7 @@ export default async function AccountPage({ params }: Params) {
       {/* ---------------- HEADER ---------------- */}
       <header className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <Link href="/" className="text-[11px] uppercase tracking-[0.25em] text-hud-muted hover:text-hud-neon">
+          <Link href="/dashboard" className="text-[11px] uppercase tracking-[0.25em] text-hud-muted hover:text-hud-neon">
             ← All accounts
           </Link>
           <p className="mt-3 hud-label">Account #{account.account_number}</p>

@@ -10,7 +10,7 @@ export default function NotFound() {
       <p className="text-sm text-hud-muted">
         Check the account number or open a different one.
       </p>
-      <Link href="/" className="hud-button">← Back to index</Link>
+      <Link href="/dashboard" className="hud-button">← Back to index</Link>
     </main>
   );
 }
