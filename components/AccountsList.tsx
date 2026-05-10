@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/supabaseClient";
 import { ACCOUNT_TYPES } from "@/lib/accountTypes";
 import type { Account } from "@/lib/types";
 import { AddAccountModal } from "./AddAccountModal";
+import { EditAccountModal } from "./EditAccountModal";
 
 interface Props {
   initial: Account[];
@@ -16,16 +17,19 @@ interface Props {
 
 /**
  * Client component that owns the accounts grid plus its mutation UI:
- *   - "+" button (top-right) opens the AddAccountModal
- *   - each card has a small "✕" delete affordance with inline confirmation
+ *   - "+ New Account" button (top-right) opens the AddAccountModal
+ *   - each card has "EDIT" + "✕" controls (top-right of the card)
+ *   - delete uses an inline "Sure? Yes / No" confirmation
+ *   - edit opens an inline modal pre-filled with the row's values
  *
- * After insert/delete we update local state for instant feedback AND call
- * router.refresh() so the next render comes from the server (RLS-correct).
+ * After insert/edit/delete we update local state for instant feedback AND
+ * call router.refresh() so the next render comes from the server.
  */
 export function AccountsList({ initial, error }: Props) {
   const router = useRouter();
   const [accounts, setAccounts]           = useState<Account[]>(initial);
   const [showModal, setShowModal]         = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [busyDelete, setBusyDelete]       = useState(false);
   const [errMsg, setErrMsg]               = useState<string | null>(null);
@@ -33,6 +37,12 @@ export function AccountsList({ initial, error }: Props) {
   function handleCreated(row: Account) {
     setAccounts((prev) => [...prev, row]);
     setShowModal(false);
+    router.refresh();
+  }
+
+  function handleEdited(row: Account) {
+    setAccounts((prev) => prev.map((a) => (a.id === row.id ? row : a)));
+    setEditingAccount(null);
     router.refresh();
   }
 
@@ -101,20 +111,39 @@ export function AccountsList({ initial, error }: Props) {
                 <span className="hud-corner bottom-1 left-1  border-l-2 border-b-2" />
                 <span className="hud-corner bottom-1 right-1 border-r-2 border-b-2" />
 
-                {/* Delete control (top right) */}
+                {/* Edit + Delete controls (top-right of the card) */}
                 {!confirming ? (
-                  <button
-                    aria-label="Delete account"
-                    title="Delete account"
-                    className="absolute right-3 top-3 z-10 rounded p-1 text-hud-muted transition-colors duration-200 hover:bg-hud-loss/10 hover:text-hud-loss"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setPendingDelete(a.id);
-                    }}
+                  <div
+                    className="absolute right-2 top-2 z-10 flex items-center gap-1"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    ✕
-                  </button>
+                    <button
+                      type="button"
+                      aria-label="Edit account"
+                      title="Edit account"
+                      className="rounded px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-hud-muted transition-colors duration-200 hover:bg-hud-neon/10 hover:text-hud-neon"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditingAccount(a);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Delete account"
+                      title="Delete account"
+                      className="rounded p-1 text-hud-muted transition-colors duration-200 hover:bg-hud-loss/10 hover:text-hud-loss"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPendingDelete(a.id);
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
                 ) : (
                   <div
                     className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded border border-hud-loss/40 bg-hud-bg/90 px-2 py-1 text-[10px] uppercase tracking-[0.18em]"
@@ -174,6 +203,14 @@ export function AccountsList({ initial, error }: Props) {
         <AddAccountModal
           onClose={() => setShowModal(false)}
           onCreated={handleCreated}
+        />
+      )}
+
+      {editingAccount && (
+        <EditAccountModal
+          account={editingAccount}
+          onClose={() => setEditingAccount(null)}
+          onSaved={handleEdited}
         />
       )}
     </>
