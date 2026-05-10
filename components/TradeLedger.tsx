@@ -155,7 +155,7 @@ export function TradeLedger({ account, cycle, initialTrades }: Props) {
                       {fmtUsd(pnl)}
                     </td>
                     <td className={`px-3 py-3 text-right ${pnlClass}`}>
-                      {fmtPct(Number(t.pnl_percent), 3)}
+                      {fmtPct(Number(t.pnl_percent), 2)}
                     </td>
                     <td className="px-3 py-3 text-right whitespace-nowrap">
                       {isConfirming ? (

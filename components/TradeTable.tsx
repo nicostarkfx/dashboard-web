@@ -61,7 +61,7 @@ export function TradeTable({ trades }: Props) {
                   "px-3 py-3 text-right " +
                   (positive ? "text-hud-win" : negative ? "text-hud-loss" : "text-hud-muted")
                 }>
-                  {fmtPct(Number(t.pnl_percent), 3)}
+                  {fmtPct(Number(t.pnl_percent), 2)}
                 </td>
               </tr>
             );
