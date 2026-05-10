@@ -189,16 +189,27 @@ export default async function AccountPage({ params }: Params) {
       </HudPanel>
 
       {/* ---------------- DAILY + TRADES + BLOCKERS ----------------
-          Natural-height layout: panels grow with their content. The
-          fixed `lg:h-[70vh]` wrapper and inner scroll containers were
-          removed in the polish pass — readers can scroll the page
-          instead of scrubbing inside cramped panels. align-items on
-          the grid still keeps Daily + Ledger top-aligned at the same
-          start line on lg viewports. */}
-      <div className="flex flex-col gap-8">
-        {/* TOP ROW — Daily + Ledger, top-aligned, natural heights */}
-        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
-          <HudPanel title="Daily breakdown" className="lg:col-span-1">
+          Bounded-height layout on lg+:
+            * The Daily + Ledger row is locked to a viewport-relative
+              height (70vh, with a 520px floor). Both panels in that
+              row therefore share the SAME height and align top + bottom.
+            * Each panel scrolls its OWN body internally — the page
+              itself doesn't extend forever to fit the trade list.
+            * As the viewport grows or shrinks (zoom in/out, resize),
+              the row follows because vh is viewport-relative.
+            * Mobile (<lg): panels stack and use natural height; no
+              forced viewport bounds, so no awkward inner scroll on
+              small screens.
+            * Payout blockers live OUTSIDE the bounded row so they
+              always render in full at their natural height. */}
+      <div className="space-y-8">
+        {/* TOP ROW — Daily + Ledger, equal height, internal scroll */}
+        <div className="grid min-h-0 grid-cols-1 gap-8 lg:h-[70vh] lg:min-h-[520px] lg:grid-cols-3">
+          <HudPanel
+            title="Daily breakdown"
+            className="min-h-0 lg:col-span-1"
+            bodyClassName="overflow-y-auto pr-2"
+          >
             {daily.length === 0 ? (
               <div className="flex flex-1 items-center justify-center py-8 text-sm text-hud-muted">
                 No days yet.
@@ -231,7 +242,11 @@ export default async function AccountPage({ params }: Params) {
             )}
           </HudPanel>
 
-          <HudPanel title="Trade ledger" className="lg:col-span-2">
+          <HudPanel
+            title="Trade ledger"
+            className="min-h-0 lg:col-span-2"
+            bodyClassName="overflow-hidden"
+          >
             <TradeLedger account={account} cycle={cycle} initialTrades={trades} />
           </HudPanel>
         </div>

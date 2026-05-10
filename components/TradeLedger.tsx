@@ -82,10 +82,11 @@ export function TradeLedger({ account, cycle, initialTrades }: Props) {
 
   return (
     <>
-      {/* Natural-height column. No internal scroll container; the page lets
-          the ledger grow as long as the trade list demands. The outer
-          HudPanel body still flexes vertically when needed. */}
-      <div className="flex flex-1 flex-col">
+      {/* Bounded-height column: the action bar pinned at top with `shrink-0`,
+          and the table claims all leftover height inside its own scroll
+          container (`flex-1 min-h-0 overflow-y-auto`). The thead is
+          sticky so headers stay visible while scrolling the rows. */}
+      <div className="flex flex-1 min-h-0 flex-col">
         <div className="mb-4 flex shrink-0 items-center justify-end">
           <button
             className="hud-button"
@@ -101,9 +102,9 @@ export function TradeLedger({ account, cycle, initialTrades }: Props) {
             No trades recorded for this cycle.
           </div>
         ) : (
-          <div className="w-full">
+          <div className="flex-1 min-h-0 w-full overflow-y-auto">
             <table className="w-full border-separate border-spacing-0 text-left font-mono text-xs tabular-nums">
-            <thead className="text-hud-muted">
+            <thead className="sticky top-0 z-10 bg-hud-panel/95 text-hud-muted backdrop-blur-sm">
               <tr className="border-b border-hud-border">
                 <th className="px-3 py-3 font-normal uppercase tracking-[0.18em]">Date</th>
                 <th className="px-3 py-3 font-normal uppercase tracking-[0.18em]">Pair</th>
