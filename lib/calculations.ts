@@ -284,39 +284,133 @@ export function parseAccountSize(s: string | null | undefined): number {
 }
 
 /**
- * Build a CSV string from trades + headline stats. Headers first, then trade
- * rows, then a stats block separated by a blank line.
+ * Optional context that turns the bare CSV into a full report header.
+ *  - `accountLabel`     : "3K #822557"
+ *  - `accountTypeLabel` : "For Traders Instant"
+ *  - `initialBalance`   : 3000
+ *  - `cycleStartDate`   : "2026-04-27"
+ * If you don't pass them the function still emits a valid CSV — just with
+ * less context in the header block.
+ */
+export interface TradesCsvContext {
+  accountLabel:     string;
+  accountTypeLabel?: string;
+  initialBalance?:  number;
+  cycleStartDate?:  string;
+}
+
+/**
+ * Build a professional CSV report:
+ *
+ *   TRADING REPORT
+ *   Account,3K #822557
+ *   Account type,For Traders Instant
+ *   Initial balance (USD),3000.00
+ *   Cycle started,2026-04-27
+ *   Generated,2026-05-05 11:21 UTC
+ *
+ *   SUMMARY
+ *   Metric,Value
+ *   Total PnL (USD),154.06
+ *   ...
+ *   Payout eligible,YES
+ *
+ *   TRADES
+ *   Date,Pair,Side,Result,PnL (USD),PnL (%)
+ *   2026-03-23,EURUSD,Long,Breakeven,1.15,0.04
+ *   ...
+ *
+ * Numeric values are rounded to 2 decimals. Dates are trimmed to YYYY-MM-DD.
+ * Side / Result are Capitalized. Payout eligibility renders as YES / NO.
  */
 export function tradesToCsv(
   trades: Trade[],
   stats: CycleStats,
-  accountLabel: string
+  context: string | TradesCsvContext,
 ): string {
-  const escape = (v: unknown) => {
+  // Back-compat: older call sites passed a bare label string.
+  const ctx: TradesCsvContext =
+    typeof context === "string" ? { accountLabel: context } : context;
+
+  const escape = (v: unknown): string => {
     const s = String(v ?? "");
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
+  const num2  = (n: number): string => (Number.isFinite(n) ? n.toFixed(2) : "");
+  const cap   = (s: string): string =>
+    s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
+  const dayOf = (iso: string): string => {
+    if (!iso) return "";
+    // Accepts both "2026-03-23" and "2026-03-23T03:00:00+00:00"
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso.slice(0, 10);
+    return d.toISOString().slice(0, 10);
+  };
 
-  const header = ["date","pair","side","result","pnl_usd","pnl_percent"];
-  const rows = trades.map(t => [
-    t.date, t.pair, t.side, t.result, t.pnl_usd, t.pnl_percent
-  ].map(escape).join(","));
+  // ---- HEADER ----------------------------------------------------------
+  const generatedAt = new Date()
+    .toISOString()
+    .replace("T", " ")
+    .slice(0, 16) + " UTC";
 
-  const statBlock = [
+  const headerLines: string[] = ["TRADING REPORT"];
+  headerLines.push(`Account,${escape(ctx.accountLabel)}`);
+  if (ctx.accountTypeLabel) {
+    headerLines.push(`Account type,${escape(ctx.accountTypeLabel)}`);
+  }
+  if (typeof ctx.initialBalance === "number") {
+    headerLines.push(`Initial balance (USD),${num2(ctx.initialBalance)}`);
+  }
+  if (ctx.cycleStartDate) {
+    headerLines.push(`Cycle started,${escape(ctx.cycleStartDate)}`);
+  }
+  headerLines.push(`Generated,${generatedAt}`);
+
+  // ---- SUMMARY ---------------------------------------------------------
+  const summaryLines: string[] = [
     "",
-    `# Account,${escape(accountLabel)}`,
-    `# Total PnL USD,${stats.total_pnl_usd}`,
-    `# Total PnL %,${stats.total_pnl_percent}`,
-    `# Trading days,${stats.trading_days}`,
-    `# Valid trading days,${stats.valid_trading_days}`,
-    `# Best day USD,${stats.best_day_pnl_usd}`,
-    `# Best day share %,${stats.best_day_share_percent}`,
-    `# Best trade USD,${stats.best_trade_pnl_usd}`,
-    `# Best trade share %,${stats.best_trade_share_percent}`,
-    `# Max drawdown USD,${stats.max_drawdown_usd}`,
-    `# Max drawdown %,${stats.max_drawdown_percent}`,
-    `# Payout eligible,${stats.payout_eligible}`
-  ].join("\n");
+    "SUMMARY",
+    "Metric,Value",
+    `Total PnL (USD),${num2(stats.total_pnl_usd)}`,
+    `Total PnL (%),${num2(stats.total_pnl_percent)}`,
+    `Trades,${stats.total_trades}`,
+    `Trading days,${stats.trading_days}`,
+    `Valid trading days,${stats.valid_trading_days}`,
+    `Best day PnL (USD),${num2(stats.best_day_pnl_usd)}`,
+    `Best day share of profit (%),${num2(stats.best_day_share_percent)}`,
+    `Best trade PnL (USD),${num2(stats.best_trade_pnl_usd)}`,
+    `Best trade share of profit (%),${num2(stats.best_trade_share_percent)}`,
+    `Max drawdown (USD),${num2(stats.max_drawdown_usd)}`,
+    `Max drawdown (%),${num2(stats.max_drawdown_percent)}`,
+    `Payout eligible,${stats.payout_eligible ? "YES" : "NO"}`,
+  ];
 
-  return [header.join(","), ...rows, statBlock].join("\n");
+  // ---- TRADES ----------------------------------------------------------
+  const tradesLines: string[] = [
+    "",
+    "TRADES",
+    "Date,Pair,Side,Result,PnL (USD),PnL (%)",
+  ];
+  // Sort chronologically (oldest first) for the report.
+  const sorted = [...trades].sort(
+    (a, b) =>
+      a.date.localeCompare(b.date) ||
+      a.created_at.localeCompare(b.created_at),
+  );
+  for (const t of sorted) {
+    tradesLines.push(
+      [
+        dayOf(t.date),
+        t.pair,
+        cap(t.side),
+        cap(t.result),
+        num2(Number(t.pnl_usd)),
+        num2(Number(t.pnl_percent)),
+      ]
+        .map(escape)
+        .join(","),
+    );
+  }
+
+  return [...headerLines, ...summaryLines, ...tradesLines].join("\n");
 }

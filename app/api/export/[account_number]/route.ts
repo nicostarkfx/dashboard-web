@@ -56,17 +56,23 @@ export async function GET(
     rule,
     cycle.start_date
   );
-  const csv = tradesToCsv(
-    trades,
-    stats,
-    `${account.name} #${account.account_number} (${rule.label})`
-  );
+  const csv = tradesToCsv(trades, stats, {
+    accountLabel:     `${account.account_size ?? account.name} #${account.account_number}`,
+    accountTypeLabel: rule.label,
+    initialBalance:   Number(account.initial_balance),
+    cycleStartDate:   cycle.start_date,
+  });
+
+  // Filename includes the report date so successive exports never overwrite
+  // each other in the user's downloads folder. e.g. trades_822557_2026-05-05.csv
+  const today = new Date().toISOString().slice(0, 10);
+  const filename = `trades_${account.account_number}_${today}.csv`;
 
   return new Response(csv, {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="trades_${account.account_number}.csv"`
-    }
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
   });
 }
